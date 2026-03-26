@@ -1,3 +1,7 @@
+Testing whether a small LLM Agent can replicate some research work...
+
+below is all agent
+
 # Spiking Neural Networks (SNN)
 
 A Python library and framework for implementing and simulating Spiking Neural Networks.
