@@ -13,6 +13,17 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 
+# =====================================================
+# CONSISTENT STYLING DEFINITIONS (same as transfer_entropy_explained.py)
+# =====================================================
+COLOR_SOURCE = '#1f77b4'      # Blue
+COLOR_TARGET = '#ff7f0e'      # Orange
+COLOR_CAUSAL = '#2ca02c'      # Green (for causal relationships)
+COLOR_BACKING = '#d62728'     # Red (for comparison/reverse)
+COLOR_TEXT = '#212121'        # Dark gray (better than pure black)
+COLOR_BG_BOX = '#ffffff'      # White boxes
+COLOR_BG_ANNOTATION = '#fff9c4'  # Light yellow for annotations
+
 
 def generate_causal_time_series(n_points=1000, noise_level=0.1, causal_strength=0.5):
     """
@@ -292,11 +303,11 @@ def plot_results(A, B, te_values, n_points=1000, spike_A=None, spike_B=None):
     
     # Plot 1: Original time series
     t = np.linspace(0, 10, n_points)
-    axes[0, 0].plot(t, A[:n_points], 'b', linewidth=1, alpha=0.7, label='Series A')
-    axes[0, 0].plot(t, B[:n_points], 'r', linewidth=1, alpha=0.7, label='Series B')
-    axes[0, 0].set_xlabel('Time')
-    axes[0, 0].set_ylabel('Amplitude')
-    axes[0, 0].set_title('Synthetic Causal Time Series\n(A -> B)')
+    axes[0, 0].plot(t, A[:n_points], COLOR_SOURCE, linewidth=1.5, alpha=0.7, label='Series A')
+    axes[0, 0].plot(t, B[:n_points], COLOR_TARGET, linewidth=1.5, alpha=0.7, label='Series B')
+    axes[0, 0].set_xlabel('Time', fontsize=11, color=COLOR_TEXT)
+    axes[0, 0].set_ylabel('Amplitude', fontsize=11, color=COLOR_TEXT)
+    axes[0, 0].set_title('Synthetic Causal Time Series\n(A → B)', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     axes[0, 0].legend()
     axes[0, 0].grid(True, alpha=0.3)
     
@@ -307,29 +318,29 @@ def plot_results(A, B, te_values, n_points=1000, spike_A=None, spike_B=None):
     
     t_bins = np.arange(0, n_points * dt, dt)
     
-    # Neuron A spikes
+    # Neuron A spikes (blue - source)
     for i in range(n_neurons):
         spikes = np.where(spike_A[i] == 1)[0]
-        axes[0, 1].vlines(spikes * dt, i, i + 0.8, colors='blue', alpha=0.5, linewidth=1)
+        axes[0, 1].vlines(spikes * dt, i, i + 0.8, colors=COLOR_SOURCE, alpha=0.5, linewidth=1)
     
-    # Neuron B spikes
+    # Neuron B spikes (orange - target)
     for i in range(n_neurons):
         spikes = np.where(spike_B[i] == 1)[0]
-        axes[0, 1].vlines(spikes * dt, i + n_neurons, i + n_neurons + 0.8, colors='red', alpha=0.5, linewidth=1)
+        axes[0, 1].vlines(spikes * dt, i + n_neurons, i + n_neurons + 0.8, colors=COLOR_TARGET, alpha=0.5, linewidth=1)
     
-    axes[0, 1].set_xlabel('Time (ms)')
-    axes[0, 1].set_ylabel('Neuron Index')
-    axes[0, 1].set_title('Spiking Neural Network Activity\n(Blue = A-encoded, Red = B-encoded)')
+    axes[0, 1].set_xlabel('Time (ms)', fontsize=11, color=COLOR_TEXT)
+    axes[0, 1].set_ylabel('Neuron Index', fontsize=11, color=COLOR_TEXT)
+    axes[0, 1].set_title('Spiking Neural Network Activity\n(Blue = A-encoded, Orange = B-encoded)', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     axes[0, 1].set_xlim(0, n_points * dt)
     axes[0, 1].set_ylim(0, 2 * n_neurons)
     axes[0, 1].grid(True, alpha=0.3)
     
     # Plot 3: Transfer entropy vs lag
     lag_range = range(1, len(te_values) + 1)
-    axes[1, 0].bar(lag_range, te_values, color='purple', alpha=0.7, edgecolor='black')
-    axes[1, 0].set_xlabel('Lag (time steps)')
-    axes[1, 0].set_ylabel('Transfer Entropy')
-    axes[1, 0].set_title('Transfer Entropy from A to B\n(Indicates Causal Influence)')
+    axes[1, 0].bar(lag_range, te_values, color=COLOR_CAUSAL, alpha=0.7, edgecolor=COLOR_TEXT, linewidth=1.5)
+    axes[1, 0].set_xlabel('Lag (time steps)', fontsize=11, color=COLOR_TEXT)
+    axes[1, 0].set_ylabel('Transfer Entropy', fontsize=11, color=COLOR_TEXT)
+    axes[1, 0].set_title('Transfer Entropy from A to B\n(Indicates Causal Influence)', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     axes[1, 0].grid(True, alpha=0.3)
     
     # Plot 4: Surrogate test (reverse direction)
@@ -344,14 +355,15 @@ def plot_results(A, B, te_values, n_points=1000, spike_A=None, spike_B=None):
         te_reverse = transfer_entropy_simple(B_agg, A_agg, lag=2, n_bins=8)
         te_forward = te_values[1] if len(te_values) > 1 else te_values[0]
         
-        axes[1, 1].bar(['A -> B', 'B -> A'], [te_forward, te_reverse], 
-                       color=['purple', 'orange'], alpha=0.7, edgecolor='black')
-        axes[1, 1].set_ylabel('Transfer Entropy')
-        axes[1, 1].set_title('Directionality Test')
+        # Use consistent colors: source (blue) for forward, backing (red) for reverse
+        axes[1, 1].bar(['A → B', 'B → A'], [te_forward, te_reverse], 
+                       color=[COLOR_SOURCE, COLOR_BACKING], alpha=0.7, edgecolor=COLOR_TEXT, linewidth=1.5)
+        axes[1, 1].set_ylabel('Transfer Entropy', fontsize=11, color=COLOR_TEXT)
+        axes[1, 1].set_title('Directionality Test', fontsize=12, fontweight='bold', color=COLOR_TEXT)
         axes[1, 1].grid(True, alpha=0.3)
         axes[1, 1].set_yscale('log')
     else:
-        axes[1, 1].text(0.5, 0.5, 'Spike data not provided', ha='center', va='center')
+        axes[1, 1].text(0.5, 0.5, 'Spike data not provided', ha='center', va='center', color=COLOR_TEXT)
         axes[1, 1].set_xlim(0, 1)
         axes[1, 1].set_ylim(0, 1)
         axes[1, 1].axis('off')

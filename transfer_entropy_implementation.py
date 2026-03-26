@@ -30,9 +30,18 @@ Author: Spiking Neural Networks Project
 """
 
 import numpy as np
+from scipy.special import gamma
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, Optional
 from pathlib import Path
+
+# =====================================================
+# CONSISTENT STYLING DEFINITIONS (same as other files)
+# =====================================================
+COLOR_SOURCE = '#1f77b4'      # Blue
+COLOR_TARGET = '#ff7f0e'      # Orange
+COLOR_CAUSAL = '#2ca02c'      # Green (for causal relationships)
+COLOR_BACKING = '#d62728'     # Red (for comparison/reverse)
+COLOR_TEXT = '#212121'        # Dark gray (better than pure black)
 
 
 class TransferEntropyCalculator:
@@ -389,11 +398,11 @@ def visualize_transfer_entropy() -> plt.Figure:
     
     # Panel 1: Time series
     ax = axes[0, 0]
-    ax.plot(x[:200], 'b', alpha=0.7, label='X (source)', linewidth=0.5)
-    ax.plot(y[:200], 'r', alpha=0.7, label='Y (target)', linewidth=0.5)
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Value')
-    ax.set_title('1. Original Time Series')
+    ax.plot(x[:200], COLOR_SOURCE, alpha=0.7, label='X (source)', linewidth=0.5)
+    ax.plot(y[:200], COLOR_TARGET, alpha=0.7, label='Y (target)', linewidth=0.5)
+    ax.set_xlabel('Time', fontsize=11, color=COLOR_TEXT)
+    ax.set_ylabel('Value', fontsize=11, color=COLOR_TEXT)
+    ax.set_title('1. Original Time Series', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     ax.legend()
     ax.grid(True, alpha=0.3)
     
@@ -404,10 +413,10 @@ def visualize_transfer_entropy() -> plt.Figure:
     y_past_disc = calc._discretize(y[:-1])
     
     # Create a simple scatter plot of discretized values
-    ax.scatter(x_disc[:100], y_past_disc[:100], alpha=0.5, s=10)
-    ax.set_xlabel('X (discretized)')
-    ax.set_ylabel('Y_past (discretized)')
-    ax.set_title('2. Discretized Data')
+    ax.scatter(x_disc[:100], y_past_disc[:100], alpha=0.5, s=10, color=COLOR_TEXT)
+    ax.set_xlabel('X (discretized)', fontsize=11, color=COLOR_TEXT)
+    ax.set_ylabel('Y_past (discretized)', fontsize=11, color=COLOR_TEXT)
+    ax.set_title('2. Discretized Data', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     ax.set_xlim(0, calc.n_bins)
     ax.set_ylim(0, calc.n_bins)
     ax.grid(True, alpha=0.3)
@@ -423,9 +432,9 @@ def visualize_transfer_entropy() -> plt.Figure:
     # Show 2D slice
     slice_idx = calc.n_bins // 2
     ax.imshow(hist_3d[:, :, slice_idx], cmap='hot', aspect='auto')
-    ax.set_xlabel('X (discretized)')
-    ax.set_ylabel('Y_past (discretized)')
-    ax.set_title(f'3. Joint Distribution P(X,Y_past,Y_future)\\n(Slice at Y_future={slice_idx})')
+    ax.set_xlabel('X (discretized)', fontsize=11, color=COLOR_TEXT)
+    ax.set_ylabel('Y_past (discretized)', fontsize=11, color=COLOR_TEXT)
+    ax.set_title(f'3. Joint Distribution P(X,Y_past,Y_future)\n(Slice at Y_future={slice_idx})', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     
     # Panel 4: Probability marginals
     ax = axes[1, 0]
@@ -438,12 +447,12 @@ def visualize_transfer_entropy() -> plt.Figure:
     p_yp = np.sum(hist_3d, axis=(0, 2))
     p_yp = p_yp / np.sum(p_yp)
     
-    ax.bar(range(calc.n_bins), p_xy[:, calc.n_bins//2], alpha=0.7, label='P(X, Y_past)')
-    ax.bar(range(calc.n_bins), p_yf, alpha=0.5, label='P(Y_future)')
-    ax.bar(range(calc.n_bins), p_yp, alpha=0.5, label='P(Y_past)')
-    ax.set_xlabel('Bin Index')
-    ax.set_ylabel('Probability')
-    ax.set_title('4. Marginal Probability Distributions')
+    ax.bar(range(calc.n_bins), p_xy[:, calc.n_bins//2], alpha=0.7, label='P(X, Y_past)', color=COLOR_SOURCE)
+    ax.bar(range(calc.n_bins), p_yf, alpha=0.5, label='P(Y_future)', color=COLOR_CAUSAL)
+    ax.bar(range(calc.n_bins), p_yp, alpha=0.5, label='P(Y_past)', color=COLOR_TARGET)
+    ax.set_xlabel('Bin Index', fontsize=11, color=COLOR_TEXT)
+    ax.set_ylabel('Probability', fontsize=11, color=COLOR_TEXT)
+    ax.set_title('4. Marginal Probability Distributions', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     ax.legend()
     ax.grid(True, alpha=0.3)
     
@@ -460,8 +469,8 @@ def visualize_transfer_entropy() -> plt.Figure:
     """
     ax.text(0.1, 0.5, formula, ha='left', va='center', 
             fontsize=10, family='monospace',
-            bbox=dict(boxstyle='round', fc='lightblue', alpha=0.7))
-    ax.set_title('5. Transfer Entropy Formula', fontsize=12, fontweight='bold')
+            bbox=dict(boxstyle='round', fc=COLOR_BG_BOX, alpha=0.7, edgecolor=COLOR_TEXT))
+    ax.set_title('5. Transfer Entropy Formula', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     
     # Panel 6: Results
     ax = axes[1, 2]
@@ -469,17 +478,18 @@ def visualize_transfer_entropy() -> plt.Figure:
     te_forward = calc.compute_transfer_entropy_joint(x, y)
     te_reverse = calc.compute_transfer_entropy_joint(y, x)
     
+    # Use consistent colors: source (blue) for forward, backing (red) for reverse
     bars = ax.bar(['X → Y', 'Y → X'], [te_forward, te_reverse], 
-                  color=['blue', 'orange'], alpha=0.7)
-    ax.set_ylabel('Transfer Entropy (bits)')
-    ax.set_title('6. Transfer Entropy Results')
+                  color=[COLOR_SOURCE, COLOR_BACKING], alpha=0.7, edgecolor=COLOR_TEXT, linewidth=1.5)
+    ax.set_ylabel('Transfer Entropy (bits)', fontsize=11, color=COLOR_TEXT)
+    ax.set_title('6. Transfer Entropy Results', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     ax.set_yscale('log')
     
     # Add value labels
     for bar, te in zip(bars, [te_forward, te_reverse]):
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{te:.4f}', ha='center', va='bottom', fontsize=10)
+                f'{te:.4f}', ha='center', va='bottom', fontsize=10, color=COLOR_TEXT)
     
     plt.tight_layout()
     return fig
