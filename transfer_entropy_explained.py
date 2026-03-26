@@ -310,14 +310,14 @@ def main():
     # Create explanation figure
     print("\n[1/2] Creating explanation figure...")
     fig1 = create_explanation_figure()
-    fig1.savefig('transfer_entropy_explained.png', dpi=150, bbox_inches='tight')
-    print("  - Saved: transfer_entropy_explained.png")
+    fig1.savefig('docs/transfer_entropy_explained.png', dpi=150, bbox_inches='tight')
+    print("  - Saved: docs/transfer_entropy_explained.png")
     
     # Create comparison figure
     print("[2/2] Creating correlation vs TE comparison...")
     fig2 = create_comparison_figure()
-    fig2.savefig('correlation_vs_transfer_entropy.png', dpi=150, bbox_inches='tight')
-    print("  - Saved: correlation_vs_transfer_entropy.png")
+    fig2.savefig('docs/correlation_vs_transfer_entropy.png', dpi=150, bbox_inches='tight')
+    print("  - Saved: docs/correlation_vs_transfer_entropy.png")
     
     print("\n" + "=" * 60)
     print("Figures created successfully!")
