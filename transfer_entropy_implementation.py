@@ -80,12 +80,18 @@ class TransferEntropyCalculator:
         Returns:
             Discretized array with bin indices
         """
+        # Handle edge case where all values are the same
+        if np.ptp(data) < 1e-10:  # ptp = peak-to-peak = max - min
+            return np.zeros_like(data, dtype=int)
+        
         # Create bin edges based on data range
         bin_edges = np.linspace(data.min(), data.max(), self.n_bins + 1)
         # Digitize: assigns bin index (0 to n_bins-1)
         discretized = np.digitize(data, bin_edges) - 1
-        # Clip to ensure valid bin indices
-        return np.clip(discretized, 0, self.n_bins - 1)
+        # Clip to ensure valid bin indices [0, n_bins-1]
+        discretized = np.clip(discretized, 0, self.n_bins - 1)
+        # Ensure integer type
+        return discretized.astype(int)
     
     def compute_joint_probabilities(
         self, 
@@ -111,7 +117,11 @@ class TransferEntropyCalculator:
             - p_yp: P(Y_past) - 1D
             - p_yf: P(Y_future) - 1D
         """
-        n = len(x_past)
+        # Ensure all arrays have the same length
+        n = min(len(x_past), len(y_past), len(y_future))
+        x_past = x_past[:n]
+        y_past = y_past[:n]
+        y_future = y_future[:n]
         
         # P(X_past, Y_past, Y_future) - joint distribution
         hist_3d = np.zeros((self.n_bins, self.n_bins, self.n_bins))
@@ -381,39 +391,41 @@ def step_by_step_example() -> Dict:
 
 
 def visualize_transfer_entropy() -> plt.Figure:
-    """
-    Create visualization of Transfer Entropy calculation.
-    
-    Returns:
-        matplotlib Figure showing the TE computation flow
-    """
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    
-    # Create example data
+    """Create visualization of TE calculation process."""
+    # Create simple example data
     np.random.seed(42)
     n = 1000
     x = np.random.randn(n)
-    y = 0.7 * x[:-1] + np.random.randn(n-1)
-    y = np.concatenate([[0], y])
+    y = np.zeros(n)
+    y[0] = x[0]
+    for i in range(1, n):
+        y[i] = 0.7 * x[i-1] + 0.3 * np.random.randn()
     
-    # Panel 1: Time series
+    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    fig.patch.set_facecolor(BG_COLOR)
+    for ax in axes.flat:
+        ax.set_facecolor(BG_COLOR)
+    
+    # Panel 1: Original time series
     ax = axes[0, 0]
-    ax.plot(x[:200], COLOR_SOURCE, alpha=0.7, label='X (source)', linewidth=0.5)
-    ax.plot(y[:200], COLOR_TARGET, alpha=0.7, label='Y (target)', linewidth=0.5)
+    ax.plot(x, label='X (source)', color=COLOR_SOURCE, alpha=0.7, linewidth=1)
+    ax.plot(y, label='Y (target)', color=COLOR_TARGET, alpha=0.7, linewidth=1)
     ax.set_xlabel('Time', fontsize=11, color=COLOR_TEXT)
     ax.set_ylabel('Value', fontsize=11, color=COLOR_TEXT)
     ax.set_title('1. Original Time Series', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     ax.legend()
     ax.grid(True, alpha=0.3)
     
-    # Panel 2: Discretization
+    # Panel 2: Discretized data scatter plot
     ax = axes[0, 1]
     calc = TransferEntropyCalculator(n_bins=4, lag=1)
     x_disc = calc._discretize(x)
     y_past_disc = calc._discretize(y[:-1])
+    y_future_disc = calc._discretize(y[1:])
     
     # Create a simple scatter plot of discretized values
-    ax.scatter(x_disc[:100], y_past_disc[:100], alpha=0.5, s=10, color=COLOR_TEXT)
+    n_plot = min(len(x_disc), len(y_past_disc), len(y_future_disc))
+    ax.scatter(x_disc[:n_plot], y_past_disc[:n_plot], alpha=0.5, s=10, color=COLOR_TEXT)
     ax.set_xlabel('X (discretized)', fontsize=11, color=COLOR_TEXT)
     ax.set_ylabel('Y_past (discretized)', fontsize=11, color=COLOR_TEXT)
     ax.set_title('2. Discretized Data', fontsize=12, fontweight='bold', color=COLOR_TEXT)
@@ -424,8 +436,8 @@ def visualize_transfer_entropy() -> plt.Figure:
     # Panel 3: Joint probability distribution
     ax = axes[0, 2]
     hist_3d = np.zeros((calc.n_bins, calc.n_bins, calc.n_bins))
-    y_future_disc = calc._discretize(y[1:])
-    for i in range(len(x_disc)):
+    n_hist = min(len(x_disc), len(y_past_disc), len(y_future_disc))
+    for i in range(n_hist):
         hist_3d[x_disc[i], y_past_disc[i], y_future_disc[i]] += 1
     hist_3d = hist_3d / np.sum(hist_3d)
     
