@@ -12,8 +12,9 @@ Spiking Neural Networks (SNNs) are bio-inspired neural network models that commu
 
 ## Features
 
-- [ ] Spiking neuron models (LIF, Izhikevich, etc.)
-- [ ] Temporal learning rules (STDP, etc.)
+- [x] Spiking neuron models (LIF, Izhikevich, etc.)
+- [x] Temporal learning rules (STDP, etc.)
+- [x] Granger causality and causal inference
 - [ ] Neuromorphic hardware support
 - [ ] Energy-efficient computation
 - [ ] Event-driven processing
