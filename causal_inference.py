@@ -157,6 +157,9 @@ def transfer_entropy_simple(x, y, lag=1, n_bins=10):
     """
     Compute Transfer Entropy using binned mutual information.
     
+    This function imports and uses the proper implementation from
+    transfer_entropy_implementation.py for accurate TE calculation.
+    
     TE(X->Y) = I(Y_future; X_past | Y_past)
              = H(Y_future | Y_past) - H(Y_future | Y_past, X_past)
     
@@ -178,83 +181,13 @@ def transfer_entropy_simple(x, y, lag=1, n_bins=10):
     te : float
         Transfer entropy value (bits)
     """
-    n = len(x) - lag
+    from transfer_entropy_implementation import TransferEntropyCalculator
     
-    if n <= 0:
-        return 0.0
+    # Use the proper implementation
+    calc = TransferEntropyCalculator(n_bins=n_bins, lag=lag, method='joint')
+    te = calc.compute_transfer_entropy_joint(x, y)
     
-    # Discretize the time series
-    x_disc = np.digitize(x[:n], np.linspace(0, n+1, n_bins+1)) - 1
-    y_past = np.digitize(y[:-lag], np.linspace(0, n+1, n_bins+1)) - 1
-    y_future = np.digitize(y[lag:], np.linspace(0, n+1, n_bins+1)) - 1
-    
-    # Ensure we have valid bin indices
-    x_disc = np.clip(x_disc, 0, n_bins-1)
-    y_past = np.clip(y_past, 0, n_bins-1)
-    y_future = np.clip(y_future, 0, n_bins-1)
-    
-    # Compute joint probabilities
-    def compute_pmf(a, b, c=None):
-        """Compute PMF of variables."""
-        if c is None:
-            # 2D histogram
-            hist, _, _ = np.histogram2d(a, b, bins=[n_bins, n_bins])
-            pmf = hist / np.sum(hist)
-        else:
-            # 3D histogram (flattened)
-            n_bins3 = n_bins
-            hist = np.zeros((n_bins, n_bins, n_bins))
-            for i in range(len(a)):
-                if x_disc[i] < n_bins and y_past[i] < n_bins and c[i] < n_bins:
-                    hist[x_disc[i], y_past[i], c[i]] += 1
-            pmf = hist / np.sum(hist)
-        return pmf
-    
-    # P(Y_past, Y_future)
-    p_y_past_y_future = compute_pmf(y_past, y_future)
-    
-    # P(Y_past, X_past, Y_future)
-    p_x_y_past_y_future = np.zeros((n_bins, n_bins, n_bins))
-    for i in range(n):
-        if x_disc[i] < n_bins:
-            p_x_y_past_y_future[x_disc[i], y_past[i], y_future[i]] += 1
-    p_x_y_past_y_future = p_x_y_past_y_future / np.sum(p_x_y_past_y_future)
-    
-    # Compute TE = sum P(X,Y_past,Y_future) * log(P(X,Y_past,Y_future) / (P(X,Y_future)*P(Y_past)))
-    # Simplified: TE = H(Y_future|Y_past) - H(Y_future|Y_past,X_past)
-    
-    def entropy(p):
-        """Compute entropy from PMF."""
-        p = p.flatten()
-        p = p[p > 0]  # Remove zeros
-        return -np.sum(p * np.log2(p)) if len(p) > 0 else 0
-    
-    def conditional_entropy(p_joint, axes):
-        """Compute conditional entropy H(B|A) where p_joint is P(A,B)."""
-        # Marginal over non-conditional axes
-        if isinstance(axes, list):
-            marginal = np.sum(p_joint, axis=tuple(axes), keepdims=True)
-        else:
-            marginal = np.sum(p_joint, axis=axes, keepdims=True)
-        # Avoid division by zero
-        marginal = np.where(marginal > 0, marginal, 1)
-        # Conditional probability
-        p_cond = p_joint / marginal
-        # Entropy
-        p_cond = np.where(p_cond > 0, p_cond, 1)
-        h = -np.sum(p_joint * np.log2(p_cond))
-        return h
-    
-    # H(Y_future | Y_past)
-    h_y_future_given_y_past = conditional_entropy(p_y_past_y_future, 0)
-    
-    # H(Y_future | Y_past, X_past)
-    h_y_future_given_x_y_past = conditional_entropy(p_x_y_past_y_future, (0, 1))
-    
-    # Transfer entropy
-    te = h_y_future_given_y_past - h_y_future_given_x_y_past
-    
-    return max(0, te)  # TE should be non-negative
+    return te
 
 
 def compute_binned_transfer_entropy(spike_A, spike_B, max_lag=5, n_bins=8):
