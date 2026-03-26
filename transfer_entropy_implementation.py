@@ -33,6 +33,7 @@ import numpy as np
 from scipy.special import gamma
 import matplotlib.pyplot as plt
 from pathlib import Path
+from typing import Tuple, Dict
 
 # =====================================================
 # CONSISTENT STYLING DEFINITIONS (same as other files)
@@ -123,35 +124,44 @@ class TransferEntropyCalculator:
         y_past = y_past[:n]
         y_future = y_future[:n]
         
+        # Validate we have enough data
+        if n == 0:
+            raise ValueError("Input arrays are empty after alignment")
+        
         # P(X_past, Y_past, Y_future) - joint distribution
         hist_3d = np.zeros((self.n_bins, self.n_bins, self.n_bins))
         for i in range(n):
             hist_3d[x_past[i], y_past[i], y_future[i]] += 1
-        p_xyp_yf = hist_3d / np.sum(hist_3d)
+        total = np.sum(hist_3d)
+        p_xyp_yf = hist_3d / total if total > 0 else hist_3d
         
         # P(Y_past, Y_future) - marginalize over X
         hist_2d = np.zeros((self.n_bins, self.n_bins))
         for i in range(n):
             hist_2d[y_past[i], y_future[i]] += 1
-        p_yp_yf = hist_2d / np.sum(hist_2d)
+        total = np.sum(hist_2d)
+        p_yp_yf = hist_2d / total if total > 0 else hist_2d
         
         # P(X_past, Y_past) - marginalize over Y_future
         hist_xy = np.zeros((self.n_bins, self.n_bins))
         for i in range(n):
             hist_xy[x_past[i], y_past[i]] += 1
-        p_xy = hist_xy / np.sum(hist_xy)
+        total = np.sum(hist_xy)
+        p_xy = hist_xy / total if total > 0 else hist_xy
         
         # P(Y_past) - marginalize over everything else
         hist_yp = np.zeros(self.n_bins)
         for i in range(n):
             hist_yp[y_past[i]] += 1
-        p_yp = hist_yp / np.sum(hist_yp)
+        total = np.sum(hist_yp)
+        p_yp = hist_yp / total if total > 0 else hist_yp
         
         # P(Y_future) - marginalize over everything else
         hist_yf = np.zeros(self.n_bins)
         for i in range(n):
             hist_yf[y_future[i]] += 1
-        p_yf = hist_yf / np.sum(hist_yf)
+        total = np.sum(hist_yf)
+        p_yf = hist_yf / total if total > 0 else hist_yf
         
         return p_xyp_yf, p_yp_yf, p_xy, p_yp, p_yf
     
@@ -285,11 +295,19 @@ class TransferEntropyCalculator:
             
         Returns:
             Approximate Transfer Entropy value
+            
+        Raises:
+            ValueError: If input arrays are too short
         """
         n = len(x) - self.lag
         
         if n <= 0:
-            return 0.0
+            raise ValueError(f"Input arrays too short. "
+                           f"Need at least {self.lag + 1} points, got {len(x)}")
+        
+        if n < 10:
+            raise ValueError(f"Input arrays too short for reliable estimation. "
+                           f"Got {n} effective points after lag")
         
         # Get lagged values
         x_lagged = x[:n]
@@ -298,10 +316,45 @@ class TransferEntropyCalculator:
         # Compute correlation
         corr = np.corrcoef(x_lagged, y_current)[0, 1]
         
+        # Handle NaN correlation (constant input)
+        if np.isnan(corr):
+            return 0.0
+        
         # TE is approximately proportional to r² for linear relationships
         te = max(0, corr ** 2) * 0.1
         
         return te
+    
+    def compute_transfer_entropy(
+        self, 
+        x: np.ndarray, 
+        y: np.ndarray
+    ) -> float:
+        """
+        Compute Transfer Entropy using the configured method.
+        
+        This is the main public interface that dispatches to the appropriate
+        implementation based on self.method.
+        
+        Args:
+            x: Source time series
+            y: Target time series
+            
+        Returns:
+            Transfer Entropy value in bits
+            
+        Raises:
+            ValueError: If method is not recognized
+        """
+        if self.method == 'joint':
+            return self.compute_transfer_entropy_joint(x, y)
+        elif self.method == 'conditional_entropy':
+            return self.compute_transfer_entropy_conditional(x, y)
+        elif self.method == 'fast':
+            return self.compute_transfer_entropy_fast(x, y)
+        else:
+            raise ValueError(f"Unknown method: {self.method}. "
+                           f"Valid options: 'joint', 'conditional_entropy', 'fast'")
 
 
 def step_by_step_example() -> Dict:
@@ -542,23 +595,23 @@ def comprehensive_example():
         calc = TransferEntropyCalculator(n_bins=8, lag=1, method=method)
         
         # Case 1
-        te1 = calc.compute_transfer_entropy_joint(x1, y1)
-        te1_rev = calc.compute_transfer_entropy_joint(y1, x1)
+        te1 = calc.compute_transfer_entropy(x1, y1)
+        te1_rev = calc.compute_transfer_entropy(y1, x1)
         print(f"\nCase 1: X → Y (known causation)")
         print(f"  TE(X→Y) = {te1:.6f}")
         print(f"  TE(Y→X) = {te1_rev:.6f}")
         print(f"  Result: {'✓ Correct' if te1 > te1_rev else '✗ Wrong'}")
         
         # Case 2
-        te2 = calc.compute_transfer_entropy_joint(x2, y1)
-        te2_rev = calc.compute_transfer_entropy_joint(y1, x2)
+        te2 = calc.compute_transfer_entropy(x2, y1)
+        te2_rev = calc.compute_transfer_entropy(y1, x2)
         print(f"\nCase 2: Y → X (known causation)")
         print(f"  TE(Y→X) = {te2_rev:.6f}")
         print(f"  TE(X→Y) = {te2:.6f}")
         print(f"  Result: {'✓ Correct' if te2_rev > te2 else '✗ Wrong'}")
         
         # Case 3
-        te3 = calc.compute_transfer_entropy_joint(x3, y3)
+        te3 = calc.compute_transfer_entropy(x3, y3)
         print(f"\nCase 3: Independent (no causation)")
         print(f"  TE(X→Y) = {te3:.6f}")
         print(f"  Result: {'✓ Low TE' if te3 < 0.1 else '⚠ High TE for independent data'}")

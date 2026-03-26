@@ -107,9 +107,50 @@ def generate_neural_spike_data(A, B, n_neurons=20, dt=0.1, n_steps=None, spike_r
         Spike trains for neurons encoding A (n_neurons x n_steps)
     spike_matrix_B : np.ndarray
         Spike trains for neurons encoding B (n_neurons x n_steps)
+    
+    Raises
+    ------
+    ValueError
+        If input arrays are invalid
     """
+    # Validate inputs
+    A = np.asarray(A, dtype=float)
+    B = np.asarray(B, dtype=float)
+    
+    if A.ndim != 1 or B.ndim != 1:
+        raise ValueError(f"Input arrays must be 1D. Got A.shape={A.shape}, B.shape={B.shape}")
+    
+    if len(A) != len(B):
+        raise ValueError(f"A and B must have the same length. "
+                       f"Got A={len(A)}, B={len(B)}")
+    
+    if len(A) < 10:
+        raise ValueError(f"Input arrays too short. "
+                       f"Need at least 10 points for meaningful encoding, got {len(A)}")
+    
+    if np.any(np.isnan(A)) or np.any(np.isnan(B)):
+        raise ValueError("Input arrays contain NaN values")
+    
+    if np.any(np.isinf(A)) or np.any(np.isinf(B)):
+        raise ValueError("Input arrays contain infinite values")
+    
+    if n_neurons < 1:
+        raise ValueError(f"n_neurons must be >= 1. Got {n_neurons}")
+    
+    if dt <= 0:
+        raise ValueError(f"dt must be positive. Got {dt}")
+    
+    if spike_rate_scale <= 0:
+        raise ValueError(f"spike_rate_scale must be positive. Got {spike_rate_scale}")
+    
     if n_steps is None:
         n_steps = len(A)
+    elif n_steps < 10:
+        raise ValueError(f"n_steps too small. Got {n_steps}, minimum is 10")
+    
+    if n_steps < len(A):
+        A = A[:n_steps]
+        B = B[:n_steps]
     
     spike_matrix_A = np.zeros((n_neurons, n_steps))
     spike_matrix_B = np.zeros((n_neurons, n_steps))
