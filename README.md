@@ -15,7 +15,7 @@ Spiking Neural Networks (SNNs) are bio-inspired neural network models that commu
 - [x] Leaky Integrate-and-Fire (LIF) neuron model
 - [x] SpikingNeuralNetwork class with multiple neurons and synaptic weights
 - [x] Granger causality and causal inference using Transfer Entropy
-- [x] Synthetic neural data generation
+- [x] Educational materials for non-technical audiences
 - [ ] Temporal learning rules (STDP, etc.)
 - [ ] Izhikevich neuron model
 - [ ] Neuromorphic hardware support
@@ -93,6 +93,32 @@ results = run_causal_analysis()
 # - plot_path: Path to causal plot
 ```
 
+## Educational Materials
+
+Want to understand Transfer Entropy without the math? We've got you covered!
+
+### For Non-Technical Audiences
+
+1. **Transfer Entropy Explained** - Visual guide with diagrams:
+   ```bash
+   python transfer_entropy_explained.py
+   ```
+   Creates: `transfer_entropy_explained.png` and `correlation_vs_transfer_entropy.png`
+
+2. **Tutorial** - Plain English explanation:
+   Read `transfer_entropy_tutorial.md` for a step-by-step breakdown of:
+   - What causation means
+   - How transfer entropy detects it
+   - Why spiking neural networks are useful
+   - Real-world analogies (dominoes, etc.)
+
+### Key Concepts Explained
+
+- **Correlation vs. Causation**: Why they're different
+- **Transfer Entropy**: A measure of directional information flow
+- **Spiking Neural Networks**: How they preserve timing information
+- **Directionality**: Why A→B ≠ B→A
+
 ## Project Structure
 
 ```
@@ -103,12 +129,16 @@ spikingneuralnetworks/
 │   └── snn.py                  # SpikingNeuralNetwork class
 ├── causal_inference.py        # Transfer entropy causal analysis
 ├── run_causal.py              # Quick causal demo script
+├── transfer_entropy_explained.py  # Educational visualizations
+├── transfer_entropy_tutorial.md   # Non-technical tutorial
 ├── examples/
 │   └── basic_snn_demo.py      # Demo script
 ├── test_te*.py                # Transfer entropy tests
 ├── pyproject.toml             # Project configuration
 ├── README.md                  # This file
-└── causal_results.png         # Causal analysis visualization
+├── causal_results.png         # Causal analysis visualization
+├── transfer_entropy_explained.png  # Educational figure
+└── correlation_vs_transfer_entropy.png  # Comparison figure
 ```
 
 ## Examples
