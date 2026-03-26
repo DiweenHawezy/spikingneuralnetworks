@@ -29,7 +29,7 @@ given that we already know Y_past.
 Author: Spiking Neural Networks Project
 """
 
- import numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, Optional
 from pathlib import Path
@@ -159,6 +159,10 @@ class TransferEntropyCalculator:
         x_disc = self._discretize(x)
         y_past_disc = self._discretize(y[:-self.lag])
         y_future_disc = self._discretize(y[self.lag:])
+        
+        # Step 1b: Ensure all arrays have same length (n - lag)
+        n_effective = len(y_past_disc)
+        x_disc = x_disc[:n_effective]
         
         # Step 2: Compute joint probabilities
         p_xyp_yf, p_yp_yf, p_xy, p_yp, p_yf = self.compute_joint_probabilities(
