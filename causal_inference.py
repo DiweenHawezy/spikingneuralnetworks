@@ -423,10 +423,26 @@ def plot_results(A, B, te_values, n_points=1000, spike_A=None, spike_B=None):
 def run_causal_analysis():
     """
     Main function to run the complete causal inference analysis.
+    
+    This function:
+    1. Generates synthetic time series with known causation (A → B)
+    2. Encodes them into spiking neural network activity
+    3. Computes transfer entropy to detect the causal relationship
+    4. Creates visualizations to interpret the results
+    
+    Returns
+    -------
+    dict
+        Dictionary containing all results for further analysis
     """
     print("=" * 60)
     print("CAUSAL INFERENCE USING TRANSFER ENTROPY WITH SNNs")
     print("=" * 60)
+    print("\n📊 What we're doing:")
+    print("   1. Generate data where A causes B")
+    print("   2. Convert to neural spike patterns")
+    print("   3. Use transfer entropy to detect causation")
+    print("   4. Verify we found the right causal direction")
     
     # Step 1: Generate synthetic causal data
     print("\n[1/5] Generating synthetic time series...")
