@@ -417,7 +417,7 @@ def main():
     print("=" * 70)
     
     fig = create_real_world_examples()
-    fig.savefig('transfer_entropy_real_world_examples.png', 
+    fig.savefig('docs/transfer_entropy_real_world_examples.png', 
                 dpi=150, bbox_inches='tight')
     print("✓ Saved: transfer_entropy_real_world_examples.png")
     
