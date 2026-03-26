@@ -257,17 +257,17 @@ def create_comparison_figure():
     n = 500
     
     # Panel 1: Correlation - can't distinguish direction
-    x1 = np.random.randn(n)
-    y1 = 0.7 * x1 + 0.3 * np.random.randn(n)  # x1 -> y1
+    a1 = np.random.randn(n)
+    b1 = 0.7 * a1 + 0.3 * np.random.randn(n)  # a1 -> b1
     
-    axes[0].scatter(x1[:100], y1[:100], alpha=0.5, s=10, color=COLOR_SOURCE)
-    axes[0].set_xlabel('Variable X', fontsize=11, color=COLOR_TEXT)
-    axes[0].set_ylabel('Variable Y', fontsize=11, color=COLOR_TEXT)
-    corr_val = np.corrcoef(x1, y1)[0, 1]
+    axes[0].scatter(a1[:100], b1[:100], alpha=0.5, s=10, color=COLOR_SOURCE)
+    axes[0].set_xlabel('Variable A', fontsize=11, color=COLOR_TEXT)
+    axes[0].set_ylabel('Variable B', fontsize=11, color=COLOR_TEXT)
+    corr_val = np.corrcoef(a1, b1)[0, 1]
     axes[0].set_title(f'Correlation: r = {corr_val:.3f}', fontsize=12, fontweight='bold', color=COLOR_TEXT)
     
     # Add annotations
-    axes[0].text(0.02, 0.95, 'X and Y are correlated', ha='left', va='top', 
+    axes[0].text(0.02, 0.95, 'A and B are correlated', ha='left', va='top', 
                  transform=axes[0].transAxes, fontsize=10, color=COLOR_TEXT,
                  bbox=dict(boxstyle='round', fc=COLOR_BG_ANNOTATION, alpha=0.8))
     axes[0].text(0.02, 0.85, 'BUT: correlation ≠ causation', ha='left', va='top',
@@ -276,45 +276,45 @@ def create_comparison_figure():
     axes[0].text(0.02, 0.75, 'Correlation is SYMMETRIC', ha='left', va='top',
                  transform=axes[0].transAxes, fontsize=10, color=COLOR_TEXT,
                  bbox=dict(boxstyle='round', fc=COLOR_BG_ANNOTATION, alpha=0.8))
-    axes[0].text(0.02, 0.65, 'corr(X,Y) = corr(Y,X)', ha='left', va='top',
+    axes[0].text(0.02, 0.65, 'corr(A,B) = corr(B,A)', ha='left', va='top',
                  transform=axes[0].transAxes, fontsize=10, color=COLOR_TEXT,
                  bbox=dict(boxstyle='round', fc=COLOR_BG_ANNOTATION, alpha=0.8))
     
     # Panel 2: Transfer Entropy - detects direction
-    # Create data with clear causal relationship: x -> y at lag 1
+    # Create data with clear causal relationship: a -> b at lag 1
     np.random.seed(42)
     n = 500
     
-    # Generate x first
-    x2 = np.random.randn(n)
+    # Generate a first
+    a2 = np.random.randn(n)
     
-    # Generate y as a function of x's past value (causal relationship)
-    # y[t] depends on x[t-1] with some noise
-    y2 = np.zeros(n)
-    y2[0] = 0  # First value
+    # Generate b as a function of a's past value (causal relationship)
+    # b[t] depends on a[t-1] with some noise
+    b2 = np.zeros(n)
+    b2[0] = 0  # First value
     for t in range(1, n):
-        y2[t] = 0.5 * x2[t-1] + 0.3 * y2[t-1] + 0.5 * np.random.randn()  # x[t-1] -> y[t]
+        b2[t] = 0.5 * a2[t-1] + 0.3 * b2[t-1] + 0.5 * np.random.randn()  # a[t-1] -> b[t]
     
     # Use actual TE calculation
     from transfer_entropy_implementation import TransferEntropyCalculator
     
     # Use the fast method which works better for small datasets
     calc = TransferEntropyCalculator(n_bins=6, lag=1)
-    te_forward = calc.compute_transfer_entropy_fast(x2, y2)
-    te_reverse = calc.compute_transfer_entropy_fast(y2, x2)
+    te_forward = calc.compute_transfer_entropy_fast(a2, b2)
+    te_reverse = calc.compute_transfer_entropy_fast(b2, a2)
     
     # Fallback if fast method also returns 0
     if te_forward == 0 and te_reverse == 0:
         print("Warning: TE methods returned 0, using correlation at lag for visualization")
-        corr_forward = np.abs(np.corrcoef(x2[:-1], y2[1:])[0, 1])
-        corr_reverse = np.abs(np.corrcoef(y2[:-1], x2[1:])[0, 1])
+        corr_forward = np.abs(np.corrcoef(a2[:-1], b2[1:])[0, 1])
+        corr_reverse = np.abs(np.corrcoef(b2[:-1], a2[1:])[0, 1])
         te_forward = 0.1 * max(0, corr_forward ** 2)
         te_reverse = 0.1 * max(0, corr_reverse ** 2)
     
     # Use consistent colors: source (blue) for forward, target (orange) for reverse
     colors = [COLOR_SOURCE, COLOR_TARGET]
     
-    axes[1].bar(['X → Y', 'Y → X'], [te_forward, te_reverse],
+    axes[1].bar(['A → B', 'B → A'], [te_forward, te_reverse],
                 color=colors, alpha=0.7, edgecolor='black', linewidth=1.5)
     axes[1].set_ylabel('Transfer Entropy (bits)', fontsize=11, color=COLOR_TEXT)
     axes[1].set_title(f'TE Detects Direction\nFwd={te_forward:.3f}, Rev={te_reverse:.3f}',
@@ -322,14 +322,14 @@ def create_comparison_figure():
     
     # Highlight which direction is stronger
     if te_forward > te_reverse:
-        axes[1].text(0.5, 0.8, 'Strong in X→Y direction', ha='center', va='top',
+        axes[1].text(0.5, 0.8, 'Strong in A→B direction', ha='center', va='top',
                      transform=axes[1].transAxes, fontsize=11, color=COLOR_SOURCE, fontweight='bold')
-        axes[1].text(0.5, 0.7, 'This means: X causes Y!', ha='center', va='top',
+        axes[1].text(0.5, 0.7, 'This means: A causes B!', ha='center', va='top',
                      transform=axes[1].transAxes, fontsize=10, color=COLOR_CAUSAL, fontweight='bold')
     else:
-        axes[1].text(0.5, 0.8, 'Strong in Y→X direction', ha='center', va='top',
+        axes[1].text(0.5, 0.8, 'Strong in B→A direction', ha='center', va='top',
                      transform=axes[1].transAxes, fontsize=11, color=COLOR_TARGET, fontweight='bold')
-        axes[1].text(0.5, 0.7, 'This means: Y causes X!', ha='center', va='top',
+        axes[1].text(0.5, 0.7, 'This means: B causes A!', ha='center', va='top',
                      transform=axes[1].transAxes, fontsize=10, color=COLOR_CAUSAL, fontweight='bold')
     
     plt.tight_layout()
