@@ -185,28 +185,45 @@ def create_explanation_figure():
     ax6.set_ylim(0, 100)
     ax6.axis('off')
     
-    # Summary text with fixed box
-    ax6.text(0.5, 0.88, 'TRANSFER ENTROPY IN SIMPLE TERMS:', ha='center', va='center',
-             fontsize=11, fontweight='bold', color='darkblue')
+    # Summary text with fixed box - using proper positioning
+    # Use relative positioning within the axes
+    props = dict(boxstyle='round', facecolor='white', alpha=0.7, edgecolor='gray')
     
-    # Create a proper text box
-    ax6.text(0.5, 0.65, 'Step 1: Measure two time series (A & B)', ha='center', va='center', fontsize=9)
-    ax6.text(0.5, 0.58, 'Step 2: Encode as neural spikes', ha='center', va='center', fontsize=9)
-    ax6.text(0.5, 0.51, 'Step 3: Ask: Does A\'s past help predict B\'s future?', ha='center', va='center', fontsize=9)
-    ax6.text(0.5, 0.44, 'Step 4: If YES → A causes B!', ha='center', va='center', fontsize=9, fontweight='bold', color='green')
+    # Title
+    ax6.text(0.5, 0.92, 'TRANSFER ENTROPY IN SIMPLE TERMS:', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=9, fontweight='bold', color='darkblue')
     
-    # Key insight box
-    ax6.text(0.5, 0.32, 'KEY INSIGHT:', ha='center', va='center',
-             fontsize=10, fontweight='bold', color='darkgreen')
-    ax6.text(0.5, 0.25, 'TE(X→Y) strong + TE(Y→X) weak = X causes Y', ha='center', va='center', fontsize=8)
-    ax6.text(0.5, 0.18, 'Directional ≠ Correlation', ha='center', va='center', fontsize=8)
+    # Steps in a vertical list with proper spacing
+    steps_text = """
+Step 1: Measure two time series (A & B)
+Step 2: Encode as neural spikes
+Step 3: Ask: Does A's past help predict B's future?
+Step 4: If YES → A causes B!
+""".strip()
+    ax6.text(0.5, 0.72, steps_text, ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=8.5, fontfamily='monospace', wrap=True)
+    
+    # Key insight with green highlight
+    ax6.text(0.5, 0.55, 'KEY INSIGHT:', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=9, fontweight='bold', color='darkgreen')
+    ax6.text(0.5, 0.48, 'TE(X→Y) strong + TE(Y→X) weak = X causes Y', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=8.5, fontstyle='italic')
+    ax6.text(0.5, 0.43, 'Directional ≠ Correlation', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=8.5, fontstyle='italic')
     
     # Why SNN box
-    ax6.text(0.5, 0.08, 'WHY SPIKING NEURAL NETWORKS?', ha='center', va='center',
-             fontsize=9, fontweight='bold')
-    ax6.text(0.5, 0.03, '- Biological plausibility | Timing information | Robust to noise', ha='center', va='center', fontsize=7)
+    ax6.text(0.5, 0.28, 'WHY SPIKING NEURAL NETWORKS?', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=8, fontweight='bold')
+    ax6.text(0.5, 0.22, '- Biological plausibility | Timing information | Robust to noise', 
+             ha='center', va='bottom', transform=ax6.transAxes,
+             fontsize=7.5)
     
-    ax6.set_title('6. Summary', fontsize=12, fontweight='bold')
+    ax6.set_title('6. Summary (Updated)', fontsize=12, fontweight='bold')
     
     plt.tight_layout()
     return fig
