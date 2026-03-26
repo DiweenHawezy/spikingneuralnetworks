@@ -1,97 +1,161 @@
+"""
+Test suite for Transfer Entropy implementation.
+Uses pytest for proper test structure with assertions.
+"""
 import numpy as np
+import pytest
+import sys
+from pathlib import Path
 
-def transfer_entropy_simple(x, y, lag=1, n_bins=10):
-    """
-    Compute Transfer Entropy using binned mutual information.
-    
-    TE(X->Y) = I(Y_future; X_past | Y_past)
-             = H(Y_future | Y_past) - H(Y_future | Y_past, X_past)
-             = sum P(Y_past, X_past, Y_future) * log(P(Y_past, X_past, Y_future) * P(Y_past) / (P(X_past, Y_past) * P(Y_future)))
-    """
-    n = len(x) - lag
-    
-    if n <= 0:
-        return 0.0
-    
-    # Discretize the time series using actual data ranges
-    x_disc = np.digitize(x[:n], np.linspace(x.min(), x.max(), n_bins+1)) - 1
-    y_past = np.digitize(y[:-lag], np.linspace(y.min(), y.max(), n_bins+1)) - 1
-    y_future = np.digitize(y[lag:], np.linspace(y.min(), y.max(), n_bins+1)) - 1
-    
-    # Ensure we have valid bin indices (0 to n_bins-1)
-    x_disc = np.clip(x_disc, 0, n_bins-1)
-    y_past = np.clip(y_past, 0, n_bins-1)
-    y_future = np.clip(y_future, 0, n_bins-1)
-    
-    # Compute joint probabilities using histograms
-    # P(X_past, Y_past, Y_future)
-    hist_3d = np.zeros((n_bins, n_bins, n_bins))
-    for i in range(n):
-        hist_3d[x_disc[i], y_past[i], y_future[i]] += 1
-    p_xyp_yf = hist_3d / np.sum(hist_3d)
-    
-    # P(Y_past, Y_future)
-    hist_2d = np.zeros((n_bins, n_bins))
-    for i in range(n):
-        hist_2d[y_past[i], y_future[i]] += 1
-    p_yyp_yf = hist_2d / np.sum(hist_2d)
-    
-    # P(X_past, Y_past)
-    hist_xy = np.zeros((n_bins, n_bins))
-    for i in range(n):
-        hist_xy[x_disc[i], y_past[i]] += 1
-    p_xyp = hist_xy / np.sum(hist_xy)
-    
-    # P(Y_future)
-    hist_yf = np.zeros(n_bins)
-    for i in range(n):
-        hist_yf[y_future[i]] += 1
-    p_yf = hist_yf / np.sum(hist_yf)
-    
-    # P(Y_past)
-    hist_yp = np.zeros(n_bins)
-    for i in range(n):
-        hist_yp[y_past[i]] += 1
-    p_yp = hist_yp / np.sum(hist_yp)
-    
-    # Compute TE using the formula:
-    # TE = sum P(X,Y_past,Y_future) * log(P(X,Y_past,Y_future) * P(Y_past) / (P(X,Y_past) * P(Y_future)))
-    te = 0.0
-    for i in range(n_bins):  # x_disc
-        for j in range(n_bins):  # y_past
-            for k in range(n_bins):  # y_future
-                if p_xyp_yf[i, j, k] > 0:
-                    term = p_xyp_yf[i, j, k] * p_yp[j] / (p_xyp[i, j] * p_yf[k])
-                    if term > 0:
-                        te += p_xyp_yf[i, j, k] * np.log2(term)
-    
-    return max(0, te)
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Test with simple correlated data
-np.random.seed(42)
-n = 1000
 
-# Create correlated time series
-x = np.random.randn(n)
-y = 0.8 * x[:-1] + 0.2 * np.random.randn(n-1)  # y depends on past x
+def test_transfer_entropy_positive_for_correlated_data():
+    """Test that TE is positive for correlated time series."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = 0.8 * x[:-1] + 0.2 * np.random.randn(n-1)  # y depends on past x
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    te = calc.compute_transfer_entropy_joint(x, y)
+    
+    assert te > 0, f"TE should be positive for correlated data, got {te}"
 
-# Normalize
-x_norm = (x - x.min()) / (x.max() - x.min() + 1e-10)
-y_norm = (y - y.min()) / (y.max() - y.min() + 1e-10)
 
-print(f"x range: [{x_norm.min():.4f}, {x_norm.max():.4f}]")
-print(f"y range: [{y_norm.min():.4f}, {y_norm.max():.4f}]")
+def test_transfer_entropy_asymmetric():
+    """Test that TE is asymmetric (TE(X->Y) != TE(Y->X))."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = 0.8 * x[:-1] + 0.2 * np.random.randn(n-1)  # y depends on past x
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    te_forward = calc.compute_transfer_entropy_joint(x, y)  # X -> Y
+    te_reverse = calc.compute_transfer_entropy_joint(y, x)  # Y -> X
+    
+    assert te_forward != te_reverse, "TE should be asymmetric"
+    assert te_forward > te_reverse, "TE(X->Y) should be > TE(Y->X) when X causes Y"
 
-print("\nTransfer Entropy from x to y:")
-for lag in range(1, 6):
-    if len(x_norm) > lag:
-        te = transfer_entropy_simple(x_norm[:n-1], y_norm, lag=lag, n_bins=8)
-        print(f"  Lag {lag}: TE = {te:.6f}")
 
-# Test with independent data
-print("\nTransfer Entropy with independent data:")
-z = np.random.randn(n-1)
-z_norm = (z - z.min()) / (z.max() - z.min() + 1e-10)
-for lag in range(1, 6):
-    te = transfer_entropy_simple(x_norm[:n-1], z_norm, lag=lag, n_bins=8)
-    print(f"  Lag {lag}: TE = {te:.6f}")
+def test_transfer_entropy_low_for_independent_data():
+    """Test that TE is low (near zero) for independent time series."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = np.random.randn(n)  # Independent
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    te = calc.compute_transfer_entropy_joint(x, y)
+    
+    # TE should be close to zero for independent data
+    assert te < 0.1, f"TE should be low for independent data, got {te}"
+
+
+def test_transfer_entropy_with_different_lags():
+    """Test TE calculation with different lag values."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = 0.8 * x[:-1] + 0.2 * np.random.randn(n-1)
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    
+    # Test various lags
+    te_values = []
+    for lag in range(1, 5):
+        if len(x) > lag:
+            te = calc.compute_transfer_entropy_joint(x[:n-1], y, lag=lag)
+            te_values.append(te)
+            assert te >= 0, f"TE should be non-negative for lag={lag}, got {te}"
+    
+    assert len(te_values) > 0, "Should compute TE for at least one lag"
+
+
+def test_transfer_entropy_with_different_bins():
+    """Test TE calculation with different bin numbers."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = 0.8 * x[:-1] + 0.2 * np.random.randn(n-1)
+    
+    # Test various bin numbers
+    for n_bins in [4, 8, 10]:
+        calc = TransferEntropyCalculator(n_bins=n_bins, lag=1)
+        te = calc.compute_transfer_entropy_joint(x, y)
+        assert te >= 0, f"TE should be non-negative with n_bins={n_bins}"
+
+
+def test_causal_direction_detection():
+    """Test that we can detect causal direction correctly."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    
+    # Case 1: X causes Y
+    x1 = np.random.randn(n)
+    y1 = 0.7 * x1[:-1] + 0.3 * np.random.randn(n-1)
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    te_xy = calc.compute_transfer_entropy_joint(x1, y1)
+    te_yx = calc.compute_transfer_entropy_joint(y1, x1)
+    
+    assert te_xy > te_yx, "Should detect X -> Y causation"
+    
+    # Case 2: Y causes X (reverse)
+    x2 = 0.7 * y1[:-1] + 0.3 * np.random.randn(n-1)
+    
+    te_x2y1 = calc.compute_transfer_entropy_joint(x2, y1)
+    te_y1x2 = calc.compute_transfer_entropy_joint(y1, x2)
+    
+    assert te_y1x2 > te_x2y1, "Should detect Y -> X causation in reverse case"
+
+
+def test_discretization_valid_bins():
+    """Test that discretization produces valid bin indices."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    
+    # Test discretization
+    x_disc = calc._discretize(x)
+    
+    assert x_disc.min() >= 0, "Discretized values should be >= 0"
+    assert x_disc.max() < calc.n_bins, "Discretized values should be < n_bins"
+    assert x_disc.shape == x.shape, "Discretized shape should match input shape"
+
+
+def test_input_length_validation():
+    """Test that TE handles different input lengths correctly."""
+    from transfer_entropy_implementation import TransferEntropyCalculator
+    
+    np.random.seed(42)
+    n = 1000
+    x = np.random.randn(n)
+    y = np.random.randn(n)
+    
+    calc = TransferEntropyCalculator(n_bins=8, lag=1)
+    
+    # Test with slightly different lengths (should handle gracefully)
+    te = calc.compute_transfer_entropy_joint(x, y[:n-1])
+    assert te >= 0, "TE should be non-negative"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

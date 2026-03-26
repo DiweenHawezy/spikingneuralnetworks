@@ -10,6 +10,8 @@ import numpy as np
 from scipy.special import gamma
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
+from pathlib import Path
+import sys
 
 
 def generate_causal_time_series(n_points=1000, noise_level=0.1, causal_strength=0.5):
@@ -181,6 +183,11 @@ def transfer_entropy_simple(x, y, lag=1, n_bins=10):
     te : float
         Transfer entropy value (bits)
     """
+    # Add current directory to path for imports
+    script_dir = Path(__file__).parent
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    
     from transfer_entropy_implementation import TransferEntropyCalculator
     
     # Use the proper implementation
@@ -417,9 +424,15 @@ def run_causal_analysis():
     # Step 5: Plot results
     print("\n[5/5] Creating visualizations...")
     fig, axes = plot_results(A, B, te_values, n_points=n_points, spike_A=spike_A, spike_B=spike_B)
-    plt.savefig('/home/workstation/Documents/Projects/spikingneuralnetworks/causal_results.png', 
-                dpi=150, bbox_inches='tight')
-    print("  - Results saved to causal_results.png")
+    
+    # Save with error handling
+    output_path = Path(__file__).parent / 'causal_results.png'
+    try:
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        print(f"  - Results saved to {output_path}")
+    except Exception as e:
+        print(f"  - Warning: Could not save plot: {e}")
+        print(f"  - Continuing without saving...")
     
     # Summary
     print("\n" + "=" * 60)

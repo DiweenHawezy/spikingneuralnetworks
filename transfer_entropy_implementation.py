@@ -29,9 +29,10 @@ given that we already know Y_past.
 Author: Spiking Neural Networks Project
 """
 
-import numpy as np
+ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, Optional
+from pathlib import Path
 
 
 class TransferEntropyCalculator:
@@ -555,9 +556,15 @@ def main():
     print("=" * 70)
     
     fig = visualize_transfer_entropy()
-    fig.savefig('transfer_entropy_implementation_diagram.png', 
-                dpi=150, bbox_inches='tight')
-    print("✓ Saved: transfer_entropy_implementation_diagram.png")
+    
+    # Save with error handling
+    output_path = Path(__file__).parent / 'transfer_entropy_implementation_diagram.png'
+    try:
+        fig.savefig(output_path, dpi=150, bbox_inches='tight')
+        print(f"✓ Saved: {output_path}")
+    except Exception as e:
+        print(f"⚠ Warning: Could not save plot: {e}")
+        print("  Continuing without saving...")
     
     print("\n" + "=" * 70)
     print("DEMONSTRATION COMPLETE")
