@@ -12,48 +12,138 @@ Spiking Neural Networks (SNNs) are bio-inspired neural network models that commu
 
 ## Features
 
-- [x] Spiking neuron models (LIF, Izhikevich, etc.)
-- [x] Temporal learning rules (STDP, etc.)
-- [x] Granger causality and causal inference
+- [x] Leaky Integrate-and-Fire (LIF) neuron model
+- [x] SpikingNeuralNetwork class with multiple neurons and synaptic weights
+- [x] Granger causality and causal inference using Transfer Entropy
+- [x] Synthetic neural data generation
+- [ ] Temporal learning rules (STDP, etc.)
+- [ ] Izhikevich neuron model
 - [ ] Neuromorphic hardware support
 - [ ] Energy-efficient computation
 - [ ] Event-driven processing
 
 ## Installation
 
+Install dependencies using pip:
+
 ```bash
-pip install -r requirements.txt
+pip install -r pyproject.toml
+```
+
+Or manually install required packages:
+
+```bash
+pip install numpy scipy matplotlib
 ```
 
 ## Usage
+
+### Single Neuron
 
 ```python
 from spiking_neural_networks import LIFNeuron
 
 # Create a Leaky Integrate-and-Fire neuron
-neuron = LIFNeuron()
+neuron = LIFNeuron(
+    v_rest=0.0,
+    v_thresh=1.0,
+    v_reset=-0.5,
+    tau=20.0,
+    dt=1.0
+)
 
-# Simulate
-neuron.spike()
+# Simulate with input current
+for step in range(100):
+    spike = neuron.step(input_current=0.1)
+    if spike:
+        print(f"Spiked at step {step}")
 ```
 
-## Documentation
+### Spiking Neural Network
 
-See the [documentation](https://your-github-repo.github.io/) for detailed guides.
+```python
+from spiking_neural_networks import SpikingNeuralNetwork, LIFNeuron
 
-## Contributing
+# Create a network with 5 neurons
+network = SpikingNeuralNetwork(
+    n_neurons=5,
+    neuron_model=LIFNeuron,
+    dt=1.0
+)
 
-Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting pull requests.
+# Run simulation for 1000 steps
+spike_times = network.run(steps=1000)
+
+# Get spike counts per neuron
+counts = network.get_spike_counts()
+```
+
+### Causal Inference
+
+```python
+from causal_inference import run_causal_analysis
+
+# Run causal analysis with transfer entropy
+results = run_causal_analysis()
+
+# Results include:
+# - A, B: Causal time series
+# - TE: Transfer entropy values
+# - TE_randomized: Randomized transfer entropy (baseline)
+# - plot_path: Path to causal plot
+```
+
+## Project Structure
+
+```
+spikingneuralnetworks/
+├── spiking_neural_networks/   # Main library
+│   ├── __init__.py
+│   ├── lif_neuron.py          # LIF neuron model
+│   └── snn.py                  # SpikingNeuralNetwork class
+├── causal_inference.py        # Transfer entropy causal analysis
+├── run_causal.py              # Quick causal demo script
+├── examples/
+│   └── basic_snn_demo.py      # Demo script
+├── test_te*.py                # Transfer entropy tests
+├── pyproject.toml             # Project configuration
+├── README.md                  # This file
+└── causal_results.png         # Causal analysis visualization
+```
+
+## Examples
+
+Run the basic demo:
+
+```bash
+python examples/basic_snn_demo.py
+```
+
+Run causal inference:
+
+```bash
+python run_causal.py
+```
+
+## Testing
+
+Run the transfer entropy tests:
+
+```bash
+python test_te.py
+python test_te_correct.py
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## References
 
 - [Spiking Neural Networks - Wikipedia](https://en.wikipedia.org/wiki/Spiking_neural_network)
 - [Brian2 - Python simulation environment for spiking neural networks](https://brian2.readthedocs.io/)
 - [PyTorch SNN](https://pytorch-snn.readthedocs.io/)
+- [Transfer Entropy - Scholarpedia](http://www.scholarpedia.org/article/Transfer_entropy)
 
 ---
 
