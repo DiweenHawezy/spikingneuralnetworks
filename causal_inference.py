@@ -438,7 +438,7 @@ def run_causal_analysis():
     fig, axes = plot_results(A, B, te_values, n_points=n_points, spike_A=spike_A, spike_B=spike_B)
     
     # Save with error handling
-    output_path = Path(__file__).parent / 'causal_results.png'
+    output_path = Path(__file__).parent / 'docs' / 'causal_results.png'
     try:
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         print(f"  - Results saved to {output_path}")
